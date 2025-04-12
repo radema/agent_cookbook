@@ -51,7 +51,7 @@ class RAGWorkflow(Workflow):
     @step
     async def rerank(self, ctx: Context, ev: RetrieverEvent) -> RerankEvent:
         # Rerank the nodes
-        processor = ctx.get("processor")
+        processor = ev.get("processor")
         ranker = LLMRerank(
             choice_batch_size=5, top_n=3, llm=processor.summarizer
         )
