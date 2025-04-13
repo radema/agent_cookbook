@@ -30,6 +30,7 @@ class RAGWorkflow(Workflow):
         "Entry point for RAG, triggered by a StartEvent with `query`."
         query = ev.get("query")
         index = ev.get("index")
+        processor = ev.get("processor")
 
         if not query:
             return None
@@ -38,6 +39,7 @@ class RAGWorkflow(Workflow):
 
         # store the query in the global context
         await ctx.set("query", query)
+        await ctx.set("processor", processor)
 
         # get the index from the global context
         if index is None:
@@ -51,7 +53,7 @@ class RAGWorkflow(Workflow):
     @step
     async def rerank(self, ctx: Context, ev: RetrieverEvent) -> RerankEvent:
         # Rerank the nodes
-        processor = ev.get("processor")
+        processor = await ctx.get("processor")
         ranker = LLMRerank(
             choice_batch_size=5, top_n=3, llm=processor.summarizer
         )
@@ -65,7 +67,7 @@ class RAGWorkflow(Workflow):
     @step
     async def synthesize(self, ctx: Context, ev: RerankEvent) -> StopEvent:
         """Return a streaming response using reranked nodes."""
-        processor = ctx.get("processor")
+        processor = await ctx.get("processor")
         llm = processor.summarizer
         summarizer = CompactAndRefine(llm=llm, streaming=True, verbose=True)
         query = await ctx.get("query", default=None)
