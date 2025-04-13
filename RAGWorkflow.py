@@ -31,6 +31,7 @@ class RAGWorkflow(Workflow):
         query = ev.get("query")
         index = ev.get("index")
         processor = ev.get("processor")
+        sllm = ev.get("sllm")
 
         if not query:
             return None
@@ -40,6 +41,7 @@ class RAGWorkflow(Workflow):
         # store the query in the global context
         await ctx.set("query", query)
         await ctx.set("processor", processor)
+        await ctx.set("sllm", sllm)
 
         # get the index from the global context
         if index is None:
@@ -63,14 +65,13 @@ class RAGWorkflow(Workflow):
         )
         print(f"Reranked nodes to {len(new_nodes)}")
         return RerankEvent(nodes=new_nodes)
-    
     @step
     async def synthesize(self, ctx: Context, ev: RerankEvent) -> StopEvent:
         """Return a streaming response using reranked nodes."""
-        processor = await ctx.get("processor")
-        llm = processor.summarizer
-        summarizer = CompactAndRefine(llm=llm, streaming=True, verbose=True)
+        llm = await ctx.get("processor")
+        summarizer = CompactAndRefine(llm=llm.summarizer, streaming=False, verbose=True)
         query = await ctx.get("query", default=None)
+        # Get the complete response as text
         response = await summarizer.asynthesize(query, nodes=ev.nodes)
 
         return StopEvent(result=response)
