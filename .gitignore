@@ -1,1 +1,4 @@
 data/
+__pycache__/
+sec-edgar-filings/
+.DS_Store
